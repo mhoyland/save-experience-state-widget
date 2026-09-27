@@ -1,0 +1,20 @@
+{
+  "name": "save-experience-state",
+  "label": "Save Experience State",
+  "type": "widget",
+  "version": "1.21.0",
+  "exbVersion": "1.21.0",
+  "author": "",
+  "description": "Save, restore, export and import the experience state (page, views, window, map extent and layer visibility), with named states kept in browser local storage and automatic last-session restore.",
+  "copyright": "",
+  "license": "MIT",
+  "dependency": "jimu-arcgis",
+  "properties": {},
+  "translatedLocales": [
+    "en"
+  ],
+  "defaultSize": {
+    "width": 320,
+    "height": 400
+  }
+}

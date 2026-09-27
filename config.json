@@ -1,0 +1,15 @@
+{
+  "restoreOnReopen": true,
+  "restoreMode": "prompt",
+  "includePage": true,
+  "includeViews": true,
+  "includeWindow": true,
+  "includeMapExtent": true,
+  "includeLayerVisibility": true,
+  "includeBasemap": true,
+  "includeDrawings": true,
+  "enableLocalSaves": true,
+  "maxLocalSaves": 20,
+  "enableFileExport": true,
+  "enableFileImport": true
+}
