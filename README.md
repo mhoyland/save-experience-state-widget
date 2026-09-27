@@ -4,6 +4,8 @@ A custom [ArcGIS Experience Builder](https://developers.arcgis.com/experience-bu
 
 It is a standalone, extended version of Experience Builder's built-in **Experience state** option (*Settings → State & URL parameters → Allow to restore state upon reopening the experience*).
 
+**[Try the live demo](https://mhoyland.github.io/widget-experience/)**
+
 ![The Save Experience State widget with three saved states](screenshots/widget.png)
 
 ## Features
