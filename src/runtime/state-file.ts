@@ -1,6 +1,8 @@
 // Types, validation and (de)serialization for experience states. Kept free of jimu-arcgis / store access
 // so it can be unit tested in isolation.
 
+import { markSavedToFile } from './state-fingerprint'
+
 export const STATE_FILE_TYPE = 'exb-experience-state'
 export const STATE_FILE_VERSION = 1
 
@@ -39,6 +41,11 @@ export interface SavedExperienceState {
   createdAt: string
   updatedAt?: string
   state: ExperienceState
+  /**
+   * Fingerprint of the state as last saved to or loaded from a file (state-fingerprint.ts). Kept in the
+   * browser only: it is never written to a file.
+   */
+  fileFingerprint?: string
 }
 
 export interface ExperienceStateFile {
@@ -88,6 +95,7 @@ export function isSavedExperienceState (v: unknown): v is SavedExperienceState {
     typeof v.name === 'string' &&
     typeof v.createdAt === 'string' &&
     isOptionalString(v.updatedAt) &&
+    isOptionalString(v.fileFingerprint) &&
     isExperienceState(v.state)
 }
 
@@ -101,7 +109,7 @@ export function createStateFile (states: SavedExperienceState[], appId?: string)
     version: STATE_FILE_VERSION,
     appId,
     exportedAt: new Date().toISOString(),
-    states
+    states: states.map(({ fileFingerprint: _fileFingerprint, ...rest }) => rest)
   }
 }
 
@@ -111,7 +119,7 @@ export type ParseStateFileResult =
 
 /**
  * Parse the text of a .json state file. Imported states get fresh ids so they never collide with
- * states already in local storage.
+ * states already in local storage, and are marked as matching a saved file (this one).
  */
 export function parseStateFile (text: string): ParseStateFileResult {
   let parsed: unknown
@@ -132,7 +140,7 @@ export function parseStateFile (text: string): ParseStateFileResult {
   if (parsed.states.length === 0) {
     return { ok: false, reason: 'empty' }
   }
-  const states = (parsed.states as SavedExperienceState[]).map(s => ({ ...s, id: createStateId() }))
+  const states = (parsed.states as SavedExperienceState[]).map(({ fileFingerprint: _fileFingerprint, ...s }) => markSavedToFile({ ...s, id: createStateId() }))
   return { ok: true, states, appId: typeof parsed.appId === 'string' ? parsed.appId : undefined }
 }
 

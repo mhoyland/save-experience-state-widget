@@ -6,11 +6,14 @@ import { EditOutlined } from 'jimu-icons/outlined/editor/edit'
 import { DownloadOutlined } from 'jimu-icons/outlined/editor/download'
 import { TrashOutlined } from 'jimu-icons/outlined/editor/trash'
 import type { SavedExperienceState } from './state-file'
+import type { StateFileStatus } from './state-fingerprint'
 
 export interface StateListItemProps {
   item: SavedExperienceState
   disabled: boolean
   allowDownload: boolean
+  /** Whether the state is in a saved file; `null` hides the tag (when saving to file is off). */
+  fileStatus: StateFileStatus | null
   translate: (id: string, values?: { [key: string]: any }) => string
   onRestore: () => void
   onUpdate: () => void
@@ -44,6 +47,14 @@ const style = css`
     color: var(--sys-color-surface-paper-hint);
     font-size: 0.75rem;
   }
+  .ses-item-file-status {
+    font-size: 0.75rem;
+    color: var(--sys-color-surface-paper-hint);
+  }
+  .ses-item-file-status.is-unsaved {
+    font-weight: var(--sys-typography-font-weight-medium);
+    color: var(--sys-color-warning-dark, #8a6100);
+  }
   .ses-item-actions {
     display: flex;
     flex-shrink: 0;
@@ -51,7 +62,7 @@ const style = css`
 `
 
 export const StateListItem = (props: StateListItemProps) => {
-  const { item, disabled, allowDownload, translate } = props
+  const { item, disabled, allowDownload, fileStatus, translate } = props
   const [editing, setEditing] = React.useState(false)
   const [draftName, setDraftName] = React.useState(item.name)
   // Destructive actions (replace, delete) ask for confirmation inline, in place of the item's buttons.
@@ -107,6 +118,11 @@ export const StateListItem = (props: StateListItemProps) => {
             )
           : <div className='ses-item-name' title={item.name}>{item.name}</div>}
         {dateText && <div className='ses-item-date'>{dateText}</div>}
+        {fileStatus && (
+          <div className={`ses-item-file-status${fileStatus === 'saved' ? '' : ' is-unsaved'}`}>
+            {translate(fileStatus === 'notSaved' ? 'sesFileStatusNotSaved' : fileStatus === 'changed' ? 'sesFileStatusChanged' : 'sesFileStatusSaved')}
+          </div>
+        )}
       </div>
       <div className='ses-item-actions'>
         {iconButton(translate('sesRestoreItem', values), <ArrowUndoOutlined />, props.onRestore)}

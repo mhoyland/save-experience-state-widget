@@ -4,7 +4,7 @@ A custom [ArcGIS Experience Builder](https://developers.arcgis.com/experience-bu
 
 It is a standalone, extended version of Experience Builder's built-in **Experience state** option (*Settings → State & URL parameters → Allow to restore state upon reopening the experience*).
 
-**[Try the live demo](https://mhoyland.github.io/widget-experience/)**
+**[Try the live demo](https://mhoyland.github.io/widget-experience/)** · **[User guide](docs/user-guide.md)**
 
 ![The Save Experience State widget with three saved states](screenshots/widget.png)
 
@@ -15,6 +15,7 @@ It is a standalone, extended version of Experience Builder's built-in **Experien
 - **Export all / load from file**: export every saved state to one `.json` file, with a file name you choose, or download a single state from its row. **Load from file** restores a single-state file straight away, and adds the states of a multi-state file to the list.
 - **Drawings from the Draw widget**: saved in exactly the same format as the Draw widget's own *Export drawings* file. If the Draw widget hasn't been opened yet, restored drawings are shown in a **Drawings** map layer and moved into the Draw widget, where they can be edited, as soon as it opens.
 - **Basemap**: the basemap of each map is saved and restored. The Basemap Gallery widget highlights the restored basemap.
+- **Saved-to-file tags**: each saved state shows whether it is in a saved file (*Not saved to file*, *Unsaved changes* or *Saved to file*), with a reminder above the list while any aren't, as in Print Studio. Renaming or replacing a state after saving it to file marks it as changed.
 - **Choose what is saved**: page, section views, window, map viewpoint, layer visibility, basemap and drawings can each be switched off.
 - **Handles missing items**: a page, view, window or map that has since been removed from the experience is skipped, and the viewer is told how many items were skipped.
 
@@ -104,6 +105,8 @@ Tests are in `tests/` and use the Experience Builder SDK's Jest setup. From your
 npx jest your-extensions/widgets/save-experience-state
 npm run tscheck
 ```
+
+The user guide lives in `docs/user-guide.md`, with screenshots in `docs/images/`. `node docs/build-help-page.mjs <folder>` (run inside the Experience Builder client) turns it into a web page.
 
 ## License
 

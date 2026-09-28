@@ -4,10 +4,12 @@ import { MapViewManager, loadArcGISJSAPIModules } from 'jimu-arcgis'
 import { SaveOutlined } from 'jimu-icons/outlined/application/save'
 import { ExportOutlined } from 'jimu-icons/outlined/editor/export'
 import { ImportOutlined } from 'jimu-icons/outlined/editor/import'
+import { InfoOutlined } from 'jimu-icons/outlined/suggested/info'
 import type { IMConfig } from '../config'
 import { captureState, applyState, type StateParts } from './state-manager'
 import { createStateFile, createStateId, parseStateFile, toFileName, type ExperienceState, type SavedExperienceState } from './state-file'
 import { createStateStore, type StateStore } from './state-store'
+import { markSavedToFile, stateFileStatus, type StateFileStatus } from './state-fingerprint'
 import { adoptFallbackDrawings, getDrawingsSignature } from './drawings'
 import { StateListItem } from './state-list-item'
 import { ExportAllPrompt } from './export-all-prompt'
@@ -80,6 +82,22 @@ const style = css`
     display: flex;
     flex-direction: column;
     gap: var(--sys-spacing-1);
+  }
+  .ses-browser-only {
+    display: flex;
+    gap: var(--sys-spacing-2);
+    align-items: flex-start;
+    margin-bottom: var(--sys-spacing-2);
+    font-size: 0.75rem;
+    color: var(--sys-color-surface-paper-hint);
+  }
+  .ses-browser-only svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .ses-browser-only strong {
+    font-weight: var(--sys-typography-font-weight-medium);
+    color: var(--sys-color-surface-paper-text);
   }
   .ses-empty {
     color: var(--sys-color-surface-paper-hint);
@@ -322,6 +340,20 @@ const Widget = (props: AllWidgetProps<IMConfig>) => {
     saveAs(blob, fileName)
   }
 
+  // Download saved states and mark them as matching a file, for the tags in the list.
+  const downloadSaved = (states: SavedExperienceState[], fileName: string) => {
+    download(states, fileName)
+    store?.putSavedStates(states.map(markSavedToFile)).then(refreshSavedStates).catch(showStorageError)
+  }
+
+  // Tags telling viewers which states exist only in this browser; only useful when they can save to file.
+  const fileStatuses = React.useMemo(() => {
+    const statuses = new Map<string, StateFileStatus>()
+    if (config.enableFileExport) savedStates.forEach(item => { statuses.set(item.id, stateFileStatus(item)) })
+    return statuses
+  }, [savedStates, config.enableFileExport])
+  const unsavedCount = Array.from(fileStatuses.values()).filter(status => status !== 'saved').length
+
   // e.g. "Hawaii trip states 2026-09-27"
   const getDefaultExportName = () => {
     const now = new Date()
@@ -364,7 +396,15 @@ const Widget = (props: AllWidgetProps<IMConfig>) => {
       return
     }
 
-    if (config.enableLocalSaves && store) {
+    const canKeepStates = !!config.enableLocalSaves && !!store
+    // Without the saved states list there is nowhere to put a multi-state file, and choosing one of its
+    // states for the user would be a guess.
+    if (!canKeepStates && result.states.length > 1) {
+      setStatus({ type: 'error', text: translate('sesSingleStateOnly', { count: result.states.length }) })
+      return
+    }
+
+    if (canKeepStates) {
       const room = maxLocalSaves - savedStates.length
       if (room < result.states.length) {
         setStatus({ type: 'error', text: translate('sesLimitReached', { max: maxLocalSaves }) })
@@ -486,6 +526,12 @@ const Widget = (props: AllWidgetProps<IMConfig>) => {
               </Button>
             )}
           </div>
+          {unsavedCount > 0 && (
+            <div className='ses-browser-only' role='status'>
+              <InfoOutlined size={14} />
+              <span><strong>{translate('sesBrowserOnly')}</strong> {translate('sesBrowserOnlyHint', { count: unsavedCount })}</span>
+            </div>
+          )}
           {exportPromptOpen && (
             <div id={`${widgetId}-export-prompt`}>
               <ExportAllPrompt
@@ -495,7 +541,7 @@ const Widget = (props: AllWidgetProps<IMConfig>) => {
                 translate={translate}
                 onCancel={() => { setExportPromptOpen(false) }}
                 onExport={fileName => {
-                  download(savedStates, toFileName(fileName))
+                  downloadSaved(savedStates, toFileName(fileName))
                   setExportPromptOpen(false)
                 }}
               />
@@ -511,11 +557,12 @@ const Widget = (props: AllWidgetProps<IMConfig>) => {
                     item={item}
                     disabled={disabled}
                     allowDownload={!!config.enableFileExport}
+                    fileStatus={fileStatuses.get(item.id) ?? null}
                     translate={translate}
                     onRestore={() => restore(item.state, translate('sesRestored', { name: item.name }))}
                     onUpdate={() => { void onUpdate(item) }}
                     onRename={name => { onRename(item, name) }}
-                    onDownload={() => { download([item], toFileName(item.name)) }}
+                    onDownload={() => { downloadSaved([item], toFileName(item.name)) }}
                     onDelete={() => { onDelete(item) }}
                   />
                 ))}

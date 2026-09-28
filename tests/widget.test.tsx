@@ -71,6 +71,24 @@ describe('save-experience-state widget', () => {
     expect(queryByText('Export all')).toBeNull()
   })
 
+  it('refuses a multi-state file when named states are off, but restores a single-state file', async () => {
+    const Widget = wrapWidget(_Widget, { config: { ...config, enableLocalSaves: false } })
+    const { container, findByText, queryByText } = render(<Widget widgetId='widget_ses5' />)
+    const fileInput = container.querySelector('input[type="file"]')
+    const entry = (id: string, name: string) => ({ id, name, createdAt: '2026-09-28T12:00:00.000Z', state: {} })
+    const chooseFile = (states: any[]) => {
+      const json = JSON.stringify({ type: 'exb-experience-state', version: 1, states })
+      fireEvent.change(fileInput, { target: { files: [{ text: () => Promise.resolve(json) }] } })
+    }
+
+    chooseFile([entry('state_a', 'A'), entry('state_b', 'B'), entry('state_c', 'C')])
+    expect(await findByText('This file contains 3 states. This app can only load a file with one state.')).toBeTruthy()
+    expect(queryByText(/Loaded \d+ state/)).toBeNull()
+
+    chooseFile([entry('state_d', 'D')])
+    expect(await findByText('Restored "D".')).toBeTruthy()
+  })
+
   it('asks for a file name before exporting all states', async () => {
     const Widget = wrapWidget(_Widget, { config })
     const { getByText, getByLabelText, queryByLabelText, findByText } = render(<Widget widgetId='widget_ses4' />)
@@ -108,5 +126,44 @@ describe('save-experience-state widget', () => {
     fireEvent.click(getByLabelText('Replace First with the current state'))
     fireEvent.click(getByText('Yes'))
     expect(await findByText('Updated "First".')).toBeTruthy()
+  })
+
+  it('tags each state with whether it is in a saved file', async () => {
+    const Widget = wrapWidget(_Widget, { config })
+    const { getByText, getByLabelText, getAllByLabelText, getByRole, findByText, findAllByText, queryByText } = render(<Widget widgetId='widget_ses6' />)
+    // "Export all" in an earlier test saved both states to a file.
+    expect(await findAllByText('Saved to file')).toHaveLength(2)
+    expect(queryByText(/in a saved file/)).toBeNull()
+
+    // Renaming makes the file out of date.
+    fireEvent.click(getByLabelText('Rename First'))
+    const input = getByRole('textbox', { name: 'Rename First' })
+    fireEvent.change(input, { target: { value: 'First renamed' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(await findByText('Unsaved changes')).toBeTruthy()
+    expect(getByText(/1 state isn't in a saved file/)).toBeTruthy()
+
+    // Saving it to file again brings it back in line.
+    fireEvent.click(getByLabelText('Save First renamed to file'))
+    await waitFor(() => { expect(queryByText('Unsaved changes')).toBeNull() })
+    expect(queryByText(/in a saved file/)).toBeNull()
+
+    // A new state starts out not saved to file.
+    const other = getAllByLabelText(/^Delete /).find(button => button.getAttribute('aria-label') !== 'Delete First renamed')
+    fireEvent.click(other)
+    fireEvent.click(getByText('Yes'))
+    await findByText('1 of 2')
+    fireEvent.change(getByLabelText('State name'), { target: { value: 'Second' } })
+    fireEvent.click(getByText('Save').closest('button'))
+    expect(await findByText('Not saved to file')).toBeTruthy()
+    expect(getByText(/1 state isn't in a saved file/)).toBeTruthy()
+  })
+
+  it('hides the tags when saving to file is off', async () => {
+    const Widget = wrapWidget(_Widget, { config: { ...config, enableFileExport: false } })
+    const { findByText, queryByText } = render(<Widget widgetId='widget_ses7' />)
+    await findByText('First renamed')
+    expect(queryByText(/Not saved to file|Unsaved changes|Saved to file/)).toBeNull()
+    expect(queryByText(/in a saved file/)).toBeNull()
   })
 })
