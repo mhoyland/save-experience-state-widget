@@ -4,7 +4,7 @@ A custom [ArcGIS Experience Builder](https://developers.arcgis.com/experience-bu
 
 It is a standalone, extended version of Experience Builder's built-in **Experience state** option (*Settings → State & URL parameters → Allow to restore state upon reopening the experience*).
 
-**[Try the live demo](https://mhoyland.github.io/widget-experience/)** · **[User guide](docs/user-guide.md)**
+**[Try the live demo](https://mhoyland.github.io/widget-experience/)** · **[User guide](docs/user-guide.md)** ([web version](https://mhoyland.github.io/widget-experience/help/save-experience-state/))
 
 ![The Save Experience State widget with three saved states](screenshots/widget.png)
 
@@ -106,7 +106,7 @@ npx jest your-extensions/widgets/save-experience-state
 npm run tscheck
 ```
 
-The user guide lives in `docs/user-guide.md`, with screenshots in `docs/images/`. `node docs/build-help-page.mjs <folder>` (run inside the Experience Builder client) turns it into a web page.
+The user guide lives in `docs/user-guide.md`, with screenshots in `docs/images/`. `node docs/build-help-page.mjs <folder>` (run inside the Experience Builder client) turns it into a web page; the demo site's copy is built with `node docs/build-help-page.mjs <demo site>/help/save-experience-state ../../`.
 
 ## License
 
