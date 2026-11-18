@@ -2,7 +2,7 @@
   "name": "save-experience-state",
   "label": "Save Experience State",
   "type": "widget",
-  "version": "1.21.0",
+  "version": "1.21.1",
   "exbVersion": "1.21.0",
   "author": "",
   "description": "Save, restore, export and import the experience state (page, views, window, map extent and layer visibility), with named states kept in browser local storage and automatic last-session restore.",

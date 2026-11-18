@@ -10,12 +10,17 @@ import { loadArcGISJSAPIModules, type JimuMapView } from 'jimu-arcgis'
 //
 // Draw only creates its layers once the Draw widget is loaded. Until then, restored drawings are put in a
 // fallback GraphicsLayer (listed in the map layers) and moved into Draw's layer as soon as it appears.
+//
+// The Attribute Label widget does the same with its own labels: until Draw is loaded they wait in a
+// GraphicsLayer with id `attribute-label-<widgetId>`. Those are captured too, and restored like any other
+// drawing (into Draw's layer or our fallback), where Attribute Label picks them up again.
 
 export interface DrawGraphicJson { [key: string]: any }
 
 const DRAW_LAYER_PREFIX = 'jimu-draw-layer-'
 const DRAW_MEASUREMENTS_PREFIX = 'jimu-draw-measurements-layer-'
 const FALLBACK_LAYER_PREFIX = 'save-experience-state-drawings-'
+const HOLDING_LAYER_PREFIXES = ['attribute-label-']
 
 interface DrawLayers {
   canvas: __esri.GraphicsLayer
@@ -33,7 +38,15 @@ const loadModules = () => {
 const isUsable = (jmv: JimuMapView): boolean => !!jmv?.view?.map && !jmv.isDestroyed()
 
 export function isDrawingLayerId (id: string): boolean {
-  return !!id && (id.startsWith(DRAW_LAYER_PREFIX) || id.startsWith(FALLBACK_LAYER_PREFIX))
+  return !!id && (id.startsWith(DRAW_LAYER_PREFIX) || id.startsWith(FALLBACK_LAYER_PREFIX) || HOLDING_LAYER_PREFIXES.some(p => id.startsWith(p)))
+}
+
+/** Other widgets' layers holding drawings until Draw is loaded (see the note at the top). */
+function findHoldingLayers (jmv: JimuMapView): __esri.GraphicsLayer[] {
+  if (!isUsable(jmv)) return []
+  return jmv.view.map.allLayers
+    .filter(layer => layer.type === 'graphics' && HOLDING_LAYER_PREFIXES.some(p => !!layer.id?.startsWith(p)))
+    .toArray() as __esri.GraphicsLayer[]
 }
 
 function findDrawLayers (jmv: JimuMapView): DrawLayers[] {
@@ -104,6 +117,7 @@ export async function captureDrawings (jmv: JimuMapView): Promise<DrawGraphicJso
   // Restored drawings not yet adopted by a Draw widget (they already carry their measurementInfos).
   const fallback = getFallbackLayer(jmv)
   if (fallback) result.push(...fallback.graphics.toArray().map(g => g.toJSON()))
+  findHoldingLayers(jmv).forEach(layer => { result.push(...layer.graphics.toArray().map(g => g.toJSON())) })
   return result
 }
 
@@ -113,6 +127,8 @@ export async function applyDrawings (jmv: JimuMapView, graphicsJson: DrawGraphic
   const [Graphic, GraphicsLayer] = await loadModules()
   const graphics = graphicsJson.map(json => Graphic.fromJSON(json))
   const drawLayers = findDrawLayers(jmv)
+  // The restored set replaces everything, including labels waiting in other widgets' holding layers.
+  findHoldingLayers(jmv).forEach(layer => { layer.removeAll() })
 
   for (const { canvas, measurements } of drawLayers) {
     canvas.removeAll()
